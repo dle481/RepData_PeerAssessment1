@@ -1,0 +1,71 @@
+# Peer Assessment 1
+### Daniel Elbaz
+========================================================
+
+## Loading and processing the data set
+
+```{r, echo=TRUE}
+data <- read.csv("activity.csv")
+data$date <- as.Date(data$date)
+```
+
+## Mean and Median of the total number of steps taken each each
+### Histogram of Steps Taken
+```{r, echo=TRUE}
+hist(data$steps)
+```
+
+### Mean and Median of Steps
+```{r, echo=TRUE}
+mean(data$steps, na.rm = TRUE)
+median(data$steps, na.rm = TRUE)
+```
+
+
+## Average Daily Activity Pattern
+```{r, echo=TRUE}
+agg <- aggregate(steps ~ interval, data, mean, na.rm = TRUE)
+```
+### Plot of Average Daily Activity Pattern by Interval
+```{r}
+plot(agg[,c("interval","steps")], type = "l")
+```
+
+### The Interval with the highest average:
+```{r}
+agg[which.max(agg$steps),"interval"]
+```
+
+
+## Accounting for NA Values
+
+### Number of NA Values:
+```{r, echo=TRUE}
+length(data[is.na(data$steps),"steps"])
+```
+
+### If the value is NA, use the mean for that interval
+```{r, echo=TRUE}
+datam <- merge(data, agg, by = "interval")
+datam$steps_adj <- ifelse(is.na(datam$steps.x), datam$steps.y, datam$steps.x)
+```
+
+## Replot Histogram and Calculate the Mean/median. The mean and median remain the same with this methodology...
+```{r, echo=TRUE}
+hist(datam$steps_adj)
+mean(datam$steps_adj)
+median(datam$steps_adj)
+```
+
+
+## Difference in Activity Pattern for Weekdays vs. Weekends.
+### Breakout and Plot Average Steps by Weekday/Weekend
+```{r, echo=TRUE, message=FALSE}
+suppressWarnings(library(ggplot2))
+suppressWarnings(library(gridExtra))
+data$weekday <- factor(ifelse(weekdays(data$date) %in% c("Saturday","Sunday"),"weekend", "weekday"))
+agg2 <- aggregate(steps ~ interval + weekday, data, mean, na.rm = TRUE)
+p1 <- ggplot(agg2[agg2$weekday == "weekday",c(1,3)], aes(x = interval, y = steps)) + geom_line() + ggtitle("Weekday")
+p2 <- ggplot(agg2[agg2$weekday == "weekend",c(1,3)], aes(x = interval, y = steps)) + geom_line() + ggtitle("Weekend")
+grid.arrange(p1, p2, ncol = 1, main = "Average Steps Taken by Interval")
+```
